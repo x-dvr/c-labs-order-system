@@ -53,12 +53,18 @@ class OrderService {
     const personIDs = new Set<string>();
     if (patch.soldToID && patch.soldToID !== oldOrder.soldToID) {
       personIDs.add(patch.soldToID);
+    } else {
+      personIDs.add(oldOrder.soldToID);
     }
     if (patch.billToID && patch.billToID !== oldOrder.billToID) {
       personIDs.add(patch.billToID);
+    } else {
+      personIDs.add(oldOrder.billToID!);
     }
     if (patch.shipToID && patch.shipToID !== oldOrder.shipToID) {
       personIDs.add(patch.shipToID);
+    } else {
+      personIDs.add(oldOrder.shipToID!);
     }
 
     const persons = await Promise.all(Array.from(personIDs).map((id) => this.personFetcher.get(id)));

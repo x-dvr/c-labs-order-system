@@ -3,6 +3,7 @@ import {
   FastifyReply,
   FastifyInstance,
 } from 'fastify';
+import { parse } from 'date-fns';
 
 import * as repository from '../../repository'
 import type { Order, OrderInput } from '../../domain/Order';
@@ -11,17 +12,25 @@ import * as personFetcher from '../../person/fetcher';
 import setupCommonSchemas from './schemas';
 
 type WithOrderId = { orderID: string };
-type OrderReply = {
-  200: Order;
-};
-type OrdersReply = {
-  200: Order[];
+type OrderReply = { 200: Order };
+type OrdersReply = { 200: Order[] };
+type OrderBody = Omit<OrderInput, 'orderDate'> & { orderDate: string };
+
+const fromAPIBody = (body: OrderBody): OrderInput => {
+  if (!body.orderDate) {
+    return body as unknown as OrderInput;
+  }
+  return {
+    ...body,
+    // TODO: fix timezone to UTC
+    orderDate: parse(body.orderDate, 'yyyy-MM-dd', 0),
+  }
 };
 
 export default (app: FastifyInstance) => {
   setupCommonSchemas(app);
   
-  app.post<{ Body: OrderInput; Reply: OrderReply }>('/api/v1/order', {
+  app.post<{ Body: OrderBody; Reply: OrderReply }>('/api/v1/order', {
     schema: {
       body: { $ref: 'OrderInput#' },
       response: {
@@ -30,7 +39,7 @@ export default (app: FastifyInstance) => {
     },
     handler: async (request, reply) => {
       const service = new OrderService(repository, personFetcher);
-      const order = await service.create(request.body)
+      const order = await service.create(fromAPIBody(request.body))
 
       return reply.code(200).send(order);
     },
@@ -77,7 +86,7 @@ export default (app: FastifyInstance) => {
     },
   });
 
-  app.put<{ Params: WithOrderId; Body: OrderInput; Reply: OrderReply }>('/api/v1/order/:orderID', {
+  app.put<{ Params: WithOrderId; Body: OrderBody; Reply: OrderReply }>('/api/v1/order/:orderID', {
     schema: {
       body: { $ref: 'OrderInput#' },
       response: {
@@ -87,13 +96,13 @@ export default (app: FastifyInstance) => {
     handler: async (request, reply) => {
       const { orderID } = request.params;
       const service = new OrderService(repository, personFetcher);
-      const order = await service.update(orderID, request.body);
+      const order = await service.update(orderID, fromAPIBody(request.body));
 
       return reply.code(200).send(order);
     },
   });
 
-  app.patch<{ Params: WithOrderId; Body: OrderInput; Reply: OrderReply }>('/api/v1/order/:orderID', {
+  app.patch<{ Params: WithOrderId; Body: OrderBody; Reply: OrderReply }>('/api/v1/order/:orderID', {
     schema: {
       body: { $ref: 'OrderPatch#' },
       response: {
@@ -103,7 +112,7 @@ export default (app: FastifyInstance) => {
     handler: async (request, reply) => {
       const { orderID } = request.params;
       const service = new OrderService(repository, personFetcher);
-      const order = await service.update(orderID, request.body);
+      const order = await service.update(orderID, fromAPIBody(request.body));
 
       return reply.code(200).send(order);
     },

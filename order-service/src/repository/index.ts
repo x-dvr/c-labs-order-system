@@ -15,23 +15,27 @@ const personsCollection = database.collection<Person>('persons');
 // TODO: ensure indexes for "id" field of persons
 
 const mapUpdate = (patch: Record<string, unknown>) => {
-  const mapped = Object.entries(patch).map(([key, val]) => ([key, { $set: val }]));
-  return Object.fromEntries(mapped);
+  return { $set: patch };
 };
 
 export const create = async (input: Required<OrderInput>, persons: Person[]): Promise<Order> => {
   const savedPersons = new Map<string, Person>();
-  return client.withSession((s) => s.withTransaction(async (session) => {
-    const { insertedId } = await ordersCollection.insertOne(input, { session });
+  // return client.withSession((s) => s.withTransaction(async (session) => {
+    const { insertedId } = await ordersCollection.insertOne(input/*, { session }*/);
     const orderDoc = await ordersCollection.findOne({ _id: insertedId });
     assert.isDefined(orderDoc, 'Failed to save order');
 
-    console.log('ORDER DOC:', orderDoc);
     for (const person of persons) {
-      const p = await personsCollection.findOneAndUpdate({ id: person.id }, mapUpdate(person), { session, upsert: true });
+      // TODO: properly handle update results
+      const { upsertedId } = await personsCollection.updateOne(
+        { id: person.id },
+        mapUpdate(person),
+        { /*session,*/ upsert: true },
+      );
+      const filter = upsertedId ? { _id: upsertedId } : { id: person.id };
+      const p = await personsCollection.findOne(filter);
       assert.isDefined(p, 'Failed to save person');
       savedPersons.set(p.id, p);
-      console.log('NEW PERSON', p);
     }
 
     const soldTo = savedPersons.get(orderDoc.soldToID);
@@ -46,7 +50,7 @@ export const create = async (input: Required<OrderInput>, persons: Person[]): Pr
       billTo,
       shipTo,
     }
-  }));
+  // }));
 };
 
 export const list = async (): Promise<Order[]> => {
@@ -102,12 +106,21 @@ export const get = async (id: string): Promise<Order | null> => {
 
 export const update = async (id: string, patch: Partial<OrderInput>, persons: Person[]): Promise<Order> => {
   const savedPersons = new Map<string, Person>();
-  return client.withSession((s) => s.withTransaction(async (session) => {
-    const orderDoc = await ordersCollection.findOneAndUpdate({ _id: new ObjectId(id) }, mapUpdate(patch), { session });
+  // return client.withSession((s) => s.withTransaction(async (session) => {
+    // TODO: properly handle update results
+    await ordersCollection.updateOne({ _id: new ObjectId(id) }, mapUpdate(patch)/*, { session }*/);
+    const orderDoc = await ordersCollection.findOne({ _id: new ObjectId(id) });
     assert.isDefined(orderDoc, 'Failed to update order');
-
+    
     for (const person of persons) {
-      const p = await personsCollection.findOneAndUpdate({ id: person.id }, mapUpdate(person), { session, upsert: true });
+      // TODO: properly handle update results
+      const { upsertedId } = await personsCollection.updateOne(
+        { id: person.id },
+        mapUpdate(person),
+        { /*session,*/ upsert: true },
+      );
+      const filter = upsertedId ? { _id: upsertedId } : { id: person.id };
+      const p = await personsCollection.findOne(filter);
       assert.isDefined(p, 'Failed to save person');
       savedPersons.set(p.id, p);
     }
@@ -124,7 +137,7 @@ export const update = async (id: string, patch: Partial<OrderInput>, persons: Pe
       billTo,
       shipTo,
     }
-  }));
+  // }));
 };
 
 // TODO: do we need to take care about deleting unused persons?
