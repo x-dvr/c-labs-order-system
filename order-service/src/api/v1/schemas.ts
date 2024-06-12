@@ -1,8 +1,4 @@
-import {
-  FastifyRequest,
-  FastifyReply,
-  FastifyInstance,
-} from 'fastify';
+import { FastifyInstance } from 'fastify';
 
 export default (app: FastifyInstance) => {
   app.addSchema({
@@ -118,7 +114,7 @@ export default (app: FastifyInstance) => {
   });
 
   app.addSchema({
-    $id: 'InputOrder',
+    $id: 'OrderInput',
     type: 'object',
     required: ['orderDate', 'soldToID', 'orderValue', 'taxValue', 'currencyCode', 'items'],
     properties: {
@@ -162,7 +158,7 @@ export default (app: FastifyInstance) => {
   });
 
   app.addSchema({
-    $id: 'InputOrderPatch',
+    $id: 'OrderPatch',
     type: 'object',
     properties: {
       orderDate: {

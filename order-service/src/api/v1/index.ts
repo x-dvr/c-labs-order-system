@@ -4,13 +4,39 @@ import {
   FastifyInstance,
 } from 'fastify';
 
-import ApiError from '../../errors/ApiError';
+import * as repository from '../../repository'
+import type { Order, OrderInput } from '../../domain/Order';
+import OrderService from '../../domain/OrderService';
+import * as personFetcher from '../../person/fetcher';
 import setupCommonSchemas from './schemas';
+
+type WithOrderId = { orderID: string };
+type OrderReply = {
+  200: Order;
+};
+type OrdersReply = {
+  200: Order[];
+};
 
 export default (app: FastifyInstance) => {
   setupCommonSchemas(app);
+  
+  app.post<{ Body: OrderInput; Reply: OrderReply }>('/api/v1/order', {
+    schema: {
+      body: { $ref: 'OrderInput#' },
+      response: {
+        200: { $ref: 'Order#' },
+      }
+    },
+    handler: async (request, reply) => {
+      const service = new OrderService(repository, personFetcher);
+      const order = await service.create(request.body)
 
-  app.get('/api/v1/order', {
+      return reply.code(200).send(order);
+    },
+  });
+
+  app.get<{ Reply: OrdersReply }>('/api/v1/order', {
     schema: {
       response: {
         200: {
@@ -19,77 +45,82 @@ export default (app: FastifyInstance) => {
         }
       }
     },
-    handler: async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
-      return reply.send([]);
-    },
-  });
-  
-  app.post('/api/v1/order', {
-    schema: {
-      body: { $ref: 'InputOrder#' },
-      response: {
-        200: { $ref: 'Order#' },
-      }
-    },
-    handler: async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
-      return reply.send(request.body);
+    handler: async (_request, reply) => {
+      const service = new OrderService(repository, personFetcher);
+      const orders = await service.list();
+
+      return reply.code(200).send(orders);
     },
   });
 
   app.delete('/api/v1/order', {
-    handler: async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+    handler: async (_request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+      const service = new OrderService(repository, personFetcher);
+      await service.deleteAll();
+
       return reply.send({});
     },
   });
 
-  type WithOrderId = { orderID: string };
-  app.get('/api/v1/order/:orderID', {
+  app.get<{ Params: WithOrderId; Reply: OrderReply }>('/api/v1/order/:orderID', {
     schema: {
       response: {
         200: { $ref: 'Order#' },
       }
     },
-    handler: async (request: FastifyRequest<{ Params: WithOrderId }>, reply: FastifyReply): Promise<FastifyReply> => {
+    handler: async (request, reply) => {
       const { orderID } = request.params;
-      return reply.send({});
+      const service = new OrderService(repository, personFetcher);
+      const order = await service.delete(orderID);
+
+      return reply.code(200).send(order);
     },
   });
 
-  app.put('/api/v1/order/:orderID', {
+  app.put<{ Params: WithOrderId; Body: OrderInput; Reply: OrderReply }>('/api/v1/order/:orderID', {
     schema: {
-      body: { $ref: 'InputOrder#' },
+      body: { $ref: 'OrderInput#' },
       response: {
         200: { $ref: 'Order#' },
       }
     },
-    handler: async (request: FastifyRequest<{ Params: WithOrderId }>, reply: FastifyReply): Promise<FastifyReply> => {
+    handler: async (request, reply) => {
       const { orderID } = request.params;
-      return reply.send(request.body);
+      const service = new OrderService(repository, personFetcher);
+      const order = await service.update(orderID, request.body);
+
+      return reply.code(200).send(order);
     },
   });
 
-  app.patch('/api/v1/order/:orderID', {
+  app.patch<{ Params: WithOrderId; Body: OrderInput; Reply: OrderReply }>('/api/v1/order/:orderID', {
     schema: {
-      body: { $ref: 'InputOrderPatch#' },
+      body: { $ref: 'OrderPatch#' },
       response: {
         200: { $ref: 'Order#' },
       }
     },
-    handler: async (request: FastifyRequest<{ Params: WithOrderId }>, reply: FastifyReply): Promise<FastifyReply> => {
+    handler: async (request, reply) => {
       const { orderID } = request.params;
-      return reply.send(request.body);
+      const service = new OrderService(repository, personFetcher);
+      const order = await service.update(orderID, request.body);
+
+      return reply.code(200).send(order);
     },
   });
 
-  app.delete('/api/v1/order/:orderID', {
+  app.delete<{ Params: WithOrderId; Reply: OrderReply }>('/api/v1/order/:orderID', {
     schema: {
       response: {
         200: { $ref: 'Order#' },
       }
     },
-    handler: async (request: FastifyRequest<{ Params: WithOrderId }>, reply: FastifyReply): Promise<FastifyReply> => {
+    handler: async (request, reply) => {
       const { orderID } = request.params;
-      return reply.send({});
+      const service = new OrderService(repository, personFetcher);
+      const deletedOrder = await service.delete(orderID);
+
+      return reply.code(200).send(deletedOrder);
     },
   });
 };

@@ -18,7 +18,6 @@ const startServer = async (): Promise<FastifyInstance> => {
   app.setErrorHandler((err: Error, request: FastifyRequest, reply: FastifyReply) => {
     const fastifyError = err as FastifyError;
     if (fastifyError.code === 'FST_ERR_VALIDATION') {
-      console.log('VALIDATION')
       throw err;
     }
     const error = err instanceof ApiError ? err : ApiError.from(err);
