@@ -86,6 +86,11 @@ services:
     build: order-service/
     ports:
       - 3000:3000
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - MONGO_URI=mongodb://mongodb:27017
+      - NODE_PORT=3000
+      - CONTRACT_API=contact-service:8080
     depends_on:
       - zookeeper
       - kafka

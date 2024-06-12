@@ -34,8 +34,11 @@ const startServer = async (): Promise<FastifyInstance> => {
   return app;
 };
 
+// TODO: consolidate all ENV vars to one config
+const port = parseInt(process.env.NODE_PORT ?? '3000', 10);
+
 startServer()
-  .then((app) => app.listen({ host: '0.0.0.0', port: 3000 }, (err) => {
+  .then((app) => app.listen({ host: '0.0.0.0', port }, (err) => {
     if (err) {
       logger.fatal(err)
       process.exit(1)

@@ -12,12 +12,15 @@ type Event = {
   };
 }
 
+// TODO: consolidate all ENV vars to one config
+const brokerAddr = process.env.KAFKA_BROKER ?? 'localhost:9093';
+
 type Handler = (eventID: string, personID: string) => Promise<void>;
 
 export const subscribe = async (onPersonDelete: Handler, onPersonChange: Handler) => {
   const kafka = new Kafka({
     clientId: 'order-service',
-    brokers: ['localhost:9093'],
+    brokers: [brokerAddr],
   });
   const consumer = kafka.consumer({ groupId: 'order-group' });
   

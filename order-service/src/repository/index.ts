@@ -6,7 +6,10 @@ import type { Person } from '../domain/Person';
 import getPersonIDs from '../domain/getPersonIDs';
 import ApiError from '../errors/ApiError';
 
-const client = new MongoClient('mongodb://127.0.0.1:27017');
+// TODO: consolidate all ENV vars to one config
+const mongoURI = process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017';
+
+const client = new MongoClient(mongoURI);
 const database = client.db('order');
 
 const ordersCollection = database.collection<Required<OrderInput>>('orders');
