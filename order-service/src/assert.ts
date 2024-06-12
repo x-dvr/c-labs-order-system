@@ -9,3 +9,7 @@ export function isDefined<T>(value: T, message: string): asserts value is NonNul
 export function isTrue(condition: boolean, message: string): asserts condition is true {
   if (!condition) throw new ApiError(500, message);
 }
+
+export function unreachable(x: never): never {
+  throw new ApiError(500, 'Didn`t expect to get here');
+}

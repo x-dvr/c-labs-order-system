@@ -1,9 +1,11 @@
+import { P } from 'pino';
 import ApiError from '../errors/ApiError';
 import type { Order, OrderInput } from './Order';
 import type { Person } from './Person';
 import getPersonIDs from './getPersonIDs';
 
 interface IOrderRepository {
+  // main flow
   create(input: Required<OrderInput>, persons: Person[]): Promise<Order>;
   list(): Promise<Order[]>;
   get(id: string): Promise<Order | null>;
@@ -11,6 +13,10 @@ interface IOrderRepository {
   update(id: string, patch: Partial<OrderInput>, persons: Person[]): Promise<Order>;
   deleteAll(): Promise<void>;
   deleteOne(id: string): Promise<void>;
+
+  // event flow
+  updatePerson(personID: string, person: Person): Promise<void>;
+  deletePerson(personID: string): Promise<void>;
 }
 
 interface IPersonFetcher {
@@ -25,6 +31,7 @@ class OrderService {
 
   async create(input: OrderInput): Promise<Order> {
     const uniqueIDs = getPersonIDs(input);
+    // TODO: use /api/v1/person/search for optimization
     const persons = await Promise.all(uniqueIDs.map((id) => this.personFetcher.get(id)));
 
     return this.repository.create({
@@ -67,6 +74,7 @@ class OrderService {
       personIDs.add(oldOrder.shipToID!);
     }
 
+    // TODO: use /api/v1/person/search for optimization
     const persons = await Promise.all(Array.from(personIDs).map((id) => this.personFetcher.get(id)));
 
     return this.repository.update(id, patch, persons);
@@ -83,6 +91,17 @@ class OrderService {
     await this.repository.deleteOne(id);
 
     return order;
+  }
+
+  // TODO: use eventID to implement idempotency
+  async handleDeletion(_eventID: string, personID: string) {
+    await this.repository.deletePerson(personID);
+  }
+
+  // TODO: use eventID to implement idempotency
+  async handleUpdate(_eventID: string, personID: string) {
+    const person = await this.personFetcher.get(personID);
+    await this.repository.updatePerson(personID, person);
   }
 }
 

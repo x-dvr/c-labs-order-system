@@ -7,7 +7,11 @@ import fastify, {
 } from 'fastify';
 import pino from 'pino';
 
+import OrderService from './domain/OrderService';
 import ApiError from './errors/ApiError';
+import * as personSubscriber from './person/subscriber';
+import * as personFetcher from './person/fetcher';
+import * as repository from './repository'
 import registerV1Routes from './api/v1'
 
 const logger = pino({ level: 'info' });
@@ -36,4 +40,11 @@ startServer()
       logger.fatal(err)
       process.exit(1)
     }
-  }));
+  }))
+  .then(() => {
+    const service = new OrderService(repository, personFetcher);
+    personSubscriber.subscribe(
+      (eventID, personID) => service.handleDeletion(eventID, personID),
+      (eventID, personID) => service.handleUpdate(eventID, personID),
+    );
+  });

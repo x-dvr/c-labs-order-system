@@ -149,3 +149,24 @@ export const deleteOne = async (id: string): Promise<void> => {
 export const deleteAll = async (): Promise<void> => {
   await ordersCollection.deleteMany({});
 };
+
+export const updatePerson = async (personID: string, person: Person) => {
+  // TODO: properly handle update results
+  await personsCollection.updateOne(
+    { id: personID },
+    mapUpdate(person),
+    { upsert: true },
+  );
+}
+
+export const deletePerson = async (personID: string) => {
+  // TODO: use transaction if we have mongo replica set
+  await personsCollection.deleteOne({ id: personID });
+  await ordersCollection.deleteMany({
+    $or: [
+      { soldToID: personID },
+      { billToID: personID },
+      { shipToID: personID },
+    ],
+  })
+}
