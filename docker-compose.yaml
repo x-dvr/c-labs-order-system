@@ -41,4 +41,12 @@ services:
       - zookeeper
       - kafka
       - mongodb
+  # order-service:
+  #   build: order-service/
+  #   ports:
+  #     - 3000:3000
+  #   depends_on:
+  #     - zookeeper
+  #     - kafka
+  #     - mongodb
 

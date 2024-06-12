@@ -32,7 +32,7 @@ const startServer = async (): Promise<FastifyInstance> => {
 };
 
 startServer()
-  .then((app) => app.listen({ port: 3000 }, (err) => {
+  .then((app) => app.listen({ host: '0.0.0.0', port: 3000 }, (err) => {
     if (err) {
       logger.fatal(err)
       process.exit(1)
